@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}Ridge 회귀 - 집값 예측{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ridge.css') }}">
+
+<h1>릿지회귀 (Ridge)</h1>
+<h2>주택 특성으로 집값 예측</h2>
+
+  <div class="box wide">
+    <hr class="section-divider">
+    <h3>샘플 데이터</h3>
+    <div class="table-container">
+      <table id="sample-table">
+        <thead>
+          <tr>
+            <th>면적</th><th>층수</th><th>방 수</th><th>주차</th><th>지하철 거리</th>
+            <th>잡음1</th><th>잡음2</th><th>중복면적</th><th>조합특성</th><th>무작위이진</th><th>가격 (억)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+<div class="row-layout">
+  <div class="box narrow">
+    <hr class="section-divider">
+    <h3>Ridge 회귀 수식</h3>
+    <div class="formula-box">
+      <p><strong>선형식:</strong>&nbsp;
+      \( \hat{y} = \beta_0 + \beta_1 x_1 + \cdots + \beta_5 x_5 \)</p>
+      <p><strong>손실함수:</strong>&nbsp;
+      \( \sum (y_i - X_i \beta)^2 + \alpha \sum \beta_j^2 \)</p>
+    </div>
+
+    <div class="predict-box">
+      <label>alpha (규제강도): <input type="number" id="alpha" value="1.0" step="0.1"></label><br>
+      <label>max_iter (최대 반복 횟수): <input type="number" id="maxiter" value="1000"></label><br>
+      <label>solver: (최적화 방법)
+        <select id="solver">
+          <option value="auto">auto</option>
+          <option value="svd">svd</option>
+          <option value="cholesky">cholesky</option>
+          <option value="lsqr">lsqr</option>
+          <option value="sparse_cg">sparse_cg</option>
+          <option value="sag">sag</option>
+          <option value="saga">saga</option>
+          <option value="lbfgs">lbfgs</option>
+        </select>
+      </label><br>
+
+      <button onclick="trainRidge()">Ridge 회귀 학습</button>
+      <button onclick="trainLinear()">선형 회귀 학습</button>
+    </div>
+
+    <pre id="ridge-result" class="result-box"></pre>
+    <pre id="linear-result" class="result-box"></pre>
+  </div>
+
+  <div class="box wide">
+    <hr class="section-divider">
+    <h3>Ridge Solver 종류</h3>
+    <ul style="line-height: 2;">
+      <li><strong>auto</strong>: 자동 선택</li>
+      <li><strong>svd</strong>: 소규모 데이터에 적합</li>
+      <li><strong>cholesky</strong>: 빠르지만 수치 불안정 가능</li>
+      <li><strong>lsqr</strong>: 희소 행렬에 적합한 반복 방식</li>
+      <li><strong>sparse_cg</strong>: 큰 희소 시스템에 적합</li>
+      <li><strong>sag</strong>: 대용량에 빠른 SGD 기반</li>
+      <li><strong>saga</strong>: L1/L2 정규화 지원</li>
+      <li><strong>lbfgs</strong>: 소규모 데이터에 효율적</li>
+    </ul>
+
+    <hr class="section-divider">
+    <h3>alpha = 규제강도</h3>
+    <ul style="line-height: 2;">
+      <li>클수록 규제 커서 과적합 방지</li>
+      <li>0 이면 선형회귀와 같음</li>
+      <li><strong>Ridge:</strong> 계수를 작게 만들지만 0은 아님</li>
+      <li><strong>Lasso:</strong> 일부 계수를 0으로 만들어 특성 선택 효과</li>
+    </ul>
+  </div>
+</div>
+
+<hr class="section-divider">
+<h3>릿지회귀 기본 코드 예시 (Scikit-learn)</h3>
+<pre class="code-box"><code>
+import pandas as pd
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
+
+# 데이터 불러오기
+df = pd.read_csv("data/ridge_sample.csv")  # 예: 주택 특성 데이터
+
+# 입력(X)과 타겟(y) 나누기
+X = df.drop(columns=["Price"])  # "Price"는 마지막 열 (예: 집값)
+y = df["Price"]
+
+# 훈련/테스트 데이터 분리
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# Ridge 회귀 모델 생성 및 학습
+model = Ridge(alpha=1.0, max_iter=1000, solver="auto")
+model.fit(X_train, y_train)
+
+# 예측
+y_pred = model.predict(X_test)
+
+# 성능 평가
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+# 결과 출력
+print("Ridge 회귀 결과")
+print(f"R² Score: {r2:.4f}")
+print(f"MSE: {mse:.4f}")
+print(f"Intercept: {model.intercept_:.4f}")
+print("Coefficients:")
+for feature, coef in zip(X.columns, model.coef_):
+    print(f"  {feature}: {coef:.4f}")
+</code></pre>
+
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+
+<script>
+const data = [
+  [84, 2, 3, 1, 500, 0.1, -0.3, 80.5, 3.1, 1, 9.2],
+  [60, 5, 2, 0, 150, 0.2, 1.2, 58.2, 2.0, 0, 6.8],
+  [120, 1, 4, 2, 800, -0.9, -1.1, 115.1, 4.8, 1, 12.5],
+  [72, 3, 3, 1, 300, 0.5, 0.3, 69.4, 3.3, 0, 7.9],
+  [95, 4, 3, 1, 650, -0.6, 1.1, 91.7, 3.7, 1, 10.7],
+  [85, 2, 3, 0, 400, 0.8, -0.4, 82.1, 2.6, 0, 9.1],
+  [50, 8, 2, 0, 200, 1.1, 0.6, 47.4, 2.0, 1, 5.8],
+  [110, 1, 4, 2, 900, -1.2, -0.5, 106.0, 4.7, 0, 13.0],
+  [78, 3, 3, 1, 550, 0.3, 0.9, 75.3, 3.4, 1, 8.6],
+  [88, 2, 3, 1, 450, -0.7, -0.2, 84.9, 3.5, 1, 9.5]
+];
+const tableBody = document.querySelector("#sample-table tbody");
+data.forEach(row => {
+  const tr = document.createElement("tr");
+  row.forEach(val => {
+    const td = document.createElement("td");
+    td.textContent = val;
+    tr.appendChild(td);
+  });
+  tableBody.appendChild(tr);
+});
+
+function trainRidge() {
+  const alpha = parseFloat(document.getElementById("alpha").value);
+  const max_iter = parseInt(document.getElementById("maxiter").value);
+  const solver = document.getElementById("solver").value;
+
+  fetch("/train_ridge", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ alpha, max_iter, solver })
+  })
+  .then(res => res.json())
+  .then(data => {
+    const result = `
+✅ 릿지 회귀 학습 결과
+---------------------------
+R² score: ${data.score}
+Intercept: ${data.intercept.toFixed(4)}
+Coefficients:
+${data.coef.map((c, i) => `X${i+1}: ${c.toFixed(4)}`).join('\n')}`;
+    document.getElementById("ridge-result").textContent = result;
+  });
+}
+
+function trainLinear() {
+  fetch("/train_ridge_linear", { method: "POST" })
+    .then(res => res.json())
+    .then(data => {
+      const result = `
+✅ 선형 회귀 학습 결과
+---------------------------
+R² score: ${data.score}
+Intercept: ${data.intercept.toFixed(4)}
+Coefficients:
+${data.coef.map((c, i) => `X${i+1}: ${c.toFixed(4)}`).join('\n')}`;
+      document.getElementById("linear-result").textContent = result;
+    });
+}
+</script>
+{% endblock %}

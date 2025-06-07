@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block title %}로지스틱 회귀 모델 학습{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/logistic.css') }}">
+<h1>로지스틱 회귀 (LogisticRegression)</h1>
+<h2>키와 몸무게로 비만 여부 분류</h2>
+
+<div class="row-layout">
+  <div class="table-container narrow">
+    <hr class="section-divider">
+    <h3>데이터 샘플</h3>
+    <table>
+      <tr><th>키</th><th>몸무게</th><th>비만 여부</th></tr>
+      {% for row in table_data %}
+      <tr>
+        <td>{{ row.height }}</td>
+        <td>{{ row.weight }}</td>
+        <td>{{ row.overweight }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  <div class="chart-container wide">
+    <hr class="section-divider">
+    <h3>시그모이드 함수</h3>
+    <p>\( \sigma(z) = \frac{1}{1 + e^{-z}} \)</p>
+    <img src="{{ url_for('static', filename='images/sigmoid.png') }}" alt="시그모이드 함수">
+  </div>
+</div>
+
+<div class="row-layout">
+  <div class="predict-box narrow">
+    <hr class="section-divider">
+    <h3>모델 학습 파라미터</h3>
+
+    <div class="form-group">
+    <label for="inputPenalty">penalty (정규화 방식):</label>
+    <select id="inputPenalty" onchange="updateSolverOptions()">
+        <option value="l2" selected>l2</option>
+        <option value="l1">l1</option>
+        <option value="elasticnet">elasticnet</option>
+        <option value="none">none</option>
+    </select>
+    </div>
+
+    <div class="form-group">
+      <label for="inputC">C (규제 강도):</label>
+      <select id="inputC">
+        <option value="0.1">0.1</option>
+        <option value="1" selected>1</option>
+        <option value="10">10</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+    <label for="inputSolver">solver (최적화 알고리즘):</label>
+    <select id="inputSolver"></select>
+    </div>
+
+    <div class="form-group">
+      <label for="inputMaxIter">max_iter (최대 반복 횟수):</label>
+      <select id="inputMaxIter">
+        <option value="50">50</option>
+        <option value="100" selected>100</option>
+        <option value="150">150</option>
+      </select>
+    </div>
+
+    <div class="form-group" id="l1RatioWrapper" style="display:none;">
+      <label for="inputL1Ratio">L1 비율 (elasticnet만):</label>
+      <select id="inputL1Ratio">
+        <option value="0.1">0.1</option>
+        <option value="0.5" selected>0.5</option>
+        <option value="0.9">0.9</option>
+      </select>
+    </div>
+
+    <button onclick="train_logistic()">Logistic 회귀 학습</button>
+    <div id="resultBox"></div>
+  </div>
+
+<div class="formula-box wide">
+    <hr class="section-divider">
+    <h3>최적화 알고리즘 비교</h3>
+    <table>
+      <tr>
+        <th>Solver</th>
+        <th>방식</th>
+        <th>GD 계열</th>
+        <th>정규화 지원</th>
+        <th>특징 요약</th>
+      </tr>
+      <tr>
+        <td>lbfgs</td>
+        <td>준뉴턴법</td>
+        <td>✅</td>
+        <td>L2</td>
+        <td>빠르고 안정적, 메모리 효율</td>
+      </tr>
+      <tr>
+        <td>sag</td>
+        <td>평균 SGD</td>
+        <td>✅</td>
+        <td>L2</td>
+        <td>빠름, 하지만 L2만 가능</td>
+      </tr>
+      <tr>
+        <td>saga</td>
+        <td>개선된 sag</td>
+        <td>✅</td>
+        <td>L1 / L2</td>
+        <td>희소 행렬, Lasso 가능</td>
+      </tr>
+      <tr>
+        <td>liblinear</td>
+        <td>좌표하강법</td>
+        <td>❌</td>
+        <td>L1 / L2</td>
+        <td>작고 희소한 데이터에 적합</td>
+      </tr>
+      <tr>
+        <td>newton-cg</td>
+        <td>뉴턴법</td>
+        <td>❌</td>
+        <td>L2</td>
+        <td>수렴 빠르지만 계산 무거움</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+
+
+  <div class="formula-box">
+    <hr class="section-divider">
+    <h3>로지스틱 회귀 수식</h3>
+    <p style="font-size: 20px;">\( z = w_1 x_1 + w_2 x_2 + b \)</p>
+    <p style="font-size: 20px;">\( \hat{y} = \frac{1}{1 + e^{-z}} \)</p>
+    <p style="font-size: 20px;">
+      \( J(\theta) = - \frac{1}{m} \sum_{i=1}^{m} 
+      \left[ y^{(i)} \log(\hat{y}^{(i)}) + (1 - y^{(i)}) \log(1 - \hat{y}^{(i)}) \right] \)
+    </p>
+    <p style="font-size: 20px;">BCE (Binary Cross Entropy)</p>
+  </div>
+
+<hr class="section-divider">
+<h3>로지스틱회귀 기본 코드 예시 (Scikit-learn)</h3>
+<pre class="code-box"><code>
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, classification_report
+
+# 데이터 불러오기
+df = pd.read_csv('data/height_weight.csv')
+X = df[['height', 'weight']]
+y = df['overweight']  # 0: 정상, 1: 비만
+
+# 데이터 분할
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 모델 학습
+model = LogisticRegression(
+    penalty='l2',         # 정규화 방식
+    C=1.0,                # 규제 강도 (작을수록 규제 강함)
+    solver='lbfgs',       # 최적화 알고리즘
+    max_iter=100          # 최대 반복 횟수
+)
+model.fit(X_train, y_train)
+
+# 예측
+y_pred = model.predict(X_test)
+
+# 정확도 평가
+accuracy = accuracy_score(y_test, y_pred)
+print("정확도:", accuracy)
+print(classification_report(y_test, y_pred))
+
+# 시각화 (비만 여부 분류)
+plt.scatter(X_test['height'], X_test['weight'], c=y_pred, cmap='coolwarm', edgecolors='k')
+plt.xlabel("키")
+plt.ylabel("몸무게")
+plt.title("로지스틱 회귀 분류 결과")
+plt.show()
+</code></pre>
+ 
+
+
+<script>
+const solverMap = {
+  l2: ['liblinear', 'saga', 'lbfgs', 'newton-cg', 'sag'],
+  l1: ['liblinear', 'saga'],
+  elasticnet: ['saga'],
+  none: ['lbfgs', 'newton-cg', 'sag']
+};
+
+  function updateSolverOptions() {
+    const penalty = document.getElementById("inputPenalty").value;
+    const solverSelect = document.getElementById("inputSolver");
+    solverSelect.innerHTML = '';
+    solverMap[penalty].forEach(solver => {
+      const opt = document.createElement("option");
+      opt.value = solver;
+      opt.text = solver;
+      solverSelect.appendChild(opt);
+    });
+    document.getElementById("l1RatioWrapper").style.display =
+      penalty === 'elasticnet' ? 'block' : 'none';
+  }
+
+  window.onload = updateSolverOptions;
+
+  function train_logistic() {
+    const C = document.getElementById("inputC").value;
+    const penalty = document.getElementById("inputPenalty").value;
+    const solver = document.getElementById("inputSolver").value;
+    const max_iter = document.getElementById("inputMaxIter").value;
+    const l1_ratio = document.getElementById("inputL1Ratio")?.value;
+
+    const payload = { C, penalty, solver, max_iter };
+    if (penalty === 'elasticnet') payload.l1_ratio = l1_ratio;
+
+    fetch('/train_logistic', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+      const box = document.getElementById("resultBox");
+      if (data.error) {
+        box.innerText = `❌ 오류: ${data.error}`;
+      } else {
+        const coef = data.coef.map(v => parseFloat(v).toFixed(2)).join(', ');
+        const intercept = parseFloat(data.intercept).toFixed(2);
+        box.innerText = `학습 완료!
+weight = ${coef}
+bias = ${intercept}
+정확도: ${data.accuracy}`;
+      }
+    });
+  }
+</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+{% endblock %}

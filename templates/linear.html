@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/linear.css') }}">
+
+<h1>선형회귀 (LinearRegression) </h1>
+<h2>키로 몸무게 예측하기</h2>
+
+<div class="row-layout">
+  <div class="table-container narrow">
+    <hr class="section-divider">
+    <h3>데이터 샘플</h3>
+    <table>
+      <tr><th>키</th><th>몸무게</th></tr>
+      {% for row in table_data %}
+        <tr><td>{{ row.height }}</td><td>{{ row.weight }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="chart-container wide">
+    <hr class="section-divider">
+    <h3>데이터 분포</h3>
+    <canvas id="scatterChart"></canvas>
+  </div>
+</div>
+
+<div class="row-layout">
+  <div class="formula-box">
+    <hr class="section-divider">
+    <h3>선형회귀 수식</h3>
+    <p style="font-size: 20px;">모델 식:  \( \quad \hat{y} = w x + b \)</p>
+    <p style="font-size: 20px;">손실 함수:  \( \quad J(w, b) = \frac{1}{m} \sum_{i=1}^{m} (\hat{y} - y_i)^2 \quad \) (MSE)</p>
+    <p style="font-size: 20px;">최적화 수식: \( \quad \boldsymbol{\theta} = (X^T X)^{-1} X^T y \)</p>
+  </div>
+
+  <div class="predict-box">
+    <hr class="section-divider">
+    <h3>예측하기</h3>
+    <input type="number" id="inputHeight" placeholder="키(cm)를 입력하세요">
+    <button onclick="predict_linear()">예측하기</button>
+    <div id="predictionBox"></div>
+  </div>
+</div>
+
+<button onclick="train_linear()">학습하기</button>
+<div id="resultBox"></div>
+
+<hr class="section-divider">
+<h3>선형회귀 기본 코드 예시 (Scikit-learn)</h3>
+
+<pre class="code-box"><code>
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+
+# 1. 데이터 불러오기
+df = pd.read_csv('data/height_weight.csv')  # 파일 경로
+
+X = df[['height']]  # 입력값: 키
+y = df['weight']    # 목표값: 몸무게
+
+# 2. 훈련셋과 테스트셋 분리 (8:2 비율)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 3. 선형 회귀 모델 정의 및 학습
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# 4. 예측 및 평가
+y_pred = model.predict(X_test)
+
+# 5. 결과 출력
+print("회귀 계수 (weight):", model.coef_[0])
+print("절편 (bias):", model.intercept_)
+print("평균 제곱 오차 (MSE):", mean_squared_error(y_test, y_pred))
+print("결정 계수 (R^2 Score):", r2_score(y_test, y_pred))
+</code></pre>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- MathJax -->
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<script>
+  const initialData = {{ chart_data | tojson }};
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const ctx = document.getElementById('scatterChart').getContext('2d');
+    let chart;
+
+    const scatterData = {
+      datasets: [{
+        label: '키 vs 몸무게',
+        data: initialData.map(d => ({ x: d.height, y: d.weight })),
+        pointRadius: 3,
+        backgroundColor: '#3498db'
+      }]
+    };
+
+    chart = new Chart(ctx, {
+      type: 'scatter',
+      data: scatterData,
+      options: {
+        responsive: true,
+        scales: {
+          x: { title: { display: true, text: 'Height (cm)' } },
+          y: { title: { display: true, text: 'Weight (kg)' } }
+        }
+      }
+    });
+
+    window.train_linear = () => {
+      fetch('/train_linear', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById("resultBox").innerText =
+            `학습 완료! \n weight = ${data.weight.toFixed(2)}\n bias = ${data.bias.toFixed(2)}`;
+
+          chart.data.datasets[1] = {
+            label: '회귀선',
+            type: 'line',
+            data: [
+              { x: 150, y: data.weight * 150 + data.bias },
+              { x: 185, y: data.weight * 185 + data.bias }
+            ],
+            borderWidth: 2,
+            borderColor: '#e74c3c',
+            fill: false,
+            tension: 0
+          };
+          chart.update();
+        });
+    }
+
+    window.predict_linear = () => {
+      const height = document.getElementById("inputHeight").value;
+      fetch('/predict_linear', {
+        method: 'POST',
+        body: new URLSearchParams({ height })
+      }).then(response => response.json())
+        .then(data => {
+          document.getElementById("predictionBox").innerText =
+            `예상 몸무게: ${data.prediction} kg`;
+        });
+    }
+  });
+</script>
+{% endblock %}

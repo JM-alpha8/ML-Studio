@@ -1,0 +1,166 @@
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #ffffff;
+    margin: 0;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+h1 {
+  font-size: 26px;
+  color: #2c3e50;
+  margin-bottom: 30px;
+}
+
+h2 {
+  font-size: 20px;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+
+h3 {
+    margin-top: 30px;
+    font-size: 18px;
+    margin-bottom: 20px;
+    border-left: 6px solid #4CAF50;
+    color: #333;
+    padding-left: 10px;
+}
+
+.section-divider {
+    width: 200px;         /* 원하는 길이로 조절 */
+    border: none;
+    border-top: 2px solid #ccc;
+    margin: 40px 0 10px 0;  /* 위쪽·아래쪽 간격 */
+}
+
+.row-layout {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 80px;
+    margin-bottom: 40px;
+}
+
+.row-layout > .narrow {
+  flex: 0 1 40%;
+}
+
+.row-layout > .wide {
+  flex: 0 1 55%;
+}
+
+.box {
+    flex: 1 1 40%;         
+    max-width: 600px;           
+    min-width: 300px;
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    box-sizing: border-box;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px 12px;
+  text-align: center;
+}
+
+th {
+  background-color: #f8f8f8;
+}
+
+.formula-box {
+  border-radius: 8px;
+  margin-bottom: 50px;
+  margin-top: 50px;
+  line-height: 1.6;
+  font-size: 20px;
+}
+
+.predict-box {
+  margin-top: 15px;
+  line-height: 2;
+}
+
+.predict-box input {
+  width: 80px;
+  padding: 5px;
+  margin-left: 8px;
+  margin-bottom: 10px;
+}
+
+button {
+    margin-top: 30px;
+    padding: 10px 20px;
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #1976D2;
+}
+
+.result-box {
+  background-color: #f3f3f3;
+  padding: 10px;
+  border-radius: 6px;
+  margin-top: 15px;
+  white-space: pre-wrap;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.comparison-table {
+  font-size: 13px;
+  margin-top: 20px;
+}
+
+.comparison-table th {
+  background-color: #eaeaea;
+}
+
+.code-box {
+    background-color: #f4f4f4;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 15px;
+    font-family: Consolas, 'Courier New', monospace;
+    font-size: 14px;
+    overflow-x: auto;
+    white-space: pre-wrap; /* 줄 넘김 허용 */
+    max-width: 700px;
+    margin-top: 10px;
+    margin-bottom: 30px;
+}
+
+pre.code-box > code {
+  line-height: 1.6;  /* 숫자를 키우면 줄 간격 넓어짐 */
+}
+
+.predict-box label {
+    display: inline-block;
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 4px;
+}

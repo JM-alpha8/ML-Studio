@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>ML Studio</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a href="/" class="home-btn">HOME</a>
+    <div class="logo">ML Studio</div>
+  </header>
+
+  <div class="layout">
+    <nav class="sidebar">
+      <a href="/linear" class="menu">선형회귀</a>
+      <a href="/logistic" class="menu">로지스틱 회귀</a>
+      <a href="/lasso" class="menu">라쏘</a>
+      <a href="/ridge" class="menu">릿지</a>
+    </nav>
+
+    <main class="content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

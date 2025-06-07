@@ -1,0 +1,183 @@
+/* static/style.css */
+
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #ffffff;
+    margin: 0;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+h1 {
+  font-size: 26px;
+  color: #2c3e50;
+  margin-bottom: 30px;
+}
+
+h2 {
+  font-size: 20px;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+
+h3 {
+    margin-top: 30px;
+    font-size: 18px;
+    margin-bottom: 20px;
+    border-left: 6px solid #4CAF50;
+    color: #333;
+    padding-left: 10px;
+}
+
+.section-divider {
+    width: 200px;         /* 원하는 길이로 조절 */
+    border: none;
+    border-top: 2px solid #ccc;
+    margin: 40px 0 10px 0;  /* 위쪽·아래쪽 간격 */
+}
+
+.row-layout {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 40px;
+    margin-bottom: 40px;
+}
+
+.row-layout > .narrow {
+  flex: 0 1 40%;
+}
+
+.row-layout > .wide {
+  flex: 0 1 55%;
+}
+
+.table-container, .formula-box, .predict-box{
+    flex: 1 1 50%;         
+    max-width: 460px;           
+    min-width: 300px;
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    box-sizing: border-box;
+}
+
+table {
+  width: 75%;
+  max-width: 600px;
+  font-size: 14px;
+}
+
+th, td {
+    padding: 8px;
+    text-align: center;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+
+th {
+    background-color: #f0f0f0;
+}
+
+button {
+    margin-top: 0;
+    padding: 10px 20px;
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+#resultBox, #predictionBox {
+    margin-top: 15px;
+    font-weight: bold;
+    color: green;
+}
+
+input[type="number"] {
+    padding: 8px;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.data-layout {
+    display: flex;
+    gap: 300px;
+    align-items: flex-start;
+    margin-bottom: 30px;
+}
+
+
+.chart-container {
+    flex: 1 1 100%;
+    max-width: 100%;
+    aspect-ratio: 5 / 3; 
+    padding: 0;
+}
+
+canvas#scatterChart {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.formula-layout {
+    display: flex;
+    gap: 0px;
+    align-items: flex-start;
+    margin-top: 40px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+.formula-box, .predict-box {
+    flex: 1;
+    min-width: 250px;
+}
+
+/* 입력창 + 버튼 정리 */
+.predict-box input[type="number"] {
+    padding: 10px;
+    margin-right: 10px;
+    width: 180px;
+    font-size: 14px;
+}
+
+.predict-box button {
+    margin-top: 12px;
+    padding: 10px 20px;
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background-color 0.3s;
+}
+
+.code-box {
+    background-color: #f4f4f4;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 15px;
+    font-family: Consolas, 'Courier New', monospace;
+    font-size: 14px;
+    overflow-x: auto;
+    white-space: pre-wrap; /* 줄 넘김 허용 */
+    max-width: 700px;
+    margin-top: 10px;
+    margin-bottom: 30px;
+}
+
+pre.code-box > code {
+  line-height: 1.6;  /* 숫자를 키우면 줄 간격 넓어짐 */
+}
