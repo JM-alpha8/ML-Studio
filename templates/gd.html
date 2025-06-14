@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block title %}GD 회귀 모델 학습{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/gd.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<h1>Gradient Descent (GD)</h1>
+<h2>공부 시간으로 시험 점수 예측하기</h2>
+
+<div class="row-layout">
+  <div class="box narrow">
+    <hr class="section-divider">
+    <h3>데이터 샘플 (10개)</h3>
+    <div class="table-container">
+      <table id="sample-table">
+        <thead><tr><th>공부시간</th><th>점수</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="box wide">
+    <hr class="section-divider">
+    <h3>업데이트 수식 및 파라미터</h3>
+    <div class="formula-box">
+      <p><strong>손실함수 (MSE):</strong> &nbsp;
+      \( L = \frac{1}{n} \sum_{i=1}^n (ax_i + b - y_i)^2 \)</p>
+      <p><strong>업데이트 공식:</strong> &nbsp;
+      \( a \leftarrow a - \eta \cdot \frac{2}{n} \sum (ax + b - y) \cdot x \)</p>
+      <p>\( b \leftarrow b - \eta \cdot \frac{2}{n} \sum (ax + b - y) \)</p>
+    </div>
+    <div class="predict-box">
+      <p><strong>loss:</strong> mean_squared_error (MSE)</p>
+      <p><strong>penalty:</strong> none</p>
+      <p><strong>learning_rate:</strong> constant</p>
+      <p><strong>eta:</strong> 0.01</p>
+    </div>
+  </div>
+</div>
+
+<div class="row-layout">
+  <div class="box wide">
+    <hr class="section-divider">
+    <h3>데이터 분포 및 예측선</h3>
+    <canvas id="scatterChart" height="300"></canvas>
+  </div>
+
+  <div class="box narrow">
+    <hr class="section-divider">
+    <h3>MSE 손실 곡면</h3>
+    <div id="surfacePlot" style="height:300px;"></div>
+  </div>
+</div>
+
+<div class="row-layout">
+  <div class="box narrow">
+    <hr class="section-divider">
+    <h3>업데이트 실행</h3>
+    <div class="predict-box">
+      <button onclick="stepGD()">업데이트 1회</button>
+      <button onclick="startAutoTrain()">자동 학습 시작</button>
+      <button onclick="stopAutoTrain()">정지</button>
+    </div>
+    <pre class="result-box" id="log"></pre>
+  </div>
+</div>
+
+<hr class="section-divider">
+<h3>Gradient Descent 학습 예시 코드 (NumPy)</h3>
+<div class="code-box">
+<pre><code>import numpy as np
+
+# 데이터
+X = np.array([1,2,3,4,5,6,7,8,9,10])
+y = np.array([15,25,31,42,49,60,65,78,85,95])
+
+# 초기값
+a, b = 1.0, 1.0
+lr = 0.01
+
+# 반복 학습
+for epoch in range(1000):
+    y_pred = a * X + b
+    error = y_pred - y
+    grad_a = (2 / len(X)) * np.sum(error * X)
+    grad_b = (2 / len(X)) * np.sum(error)
+    a -= lr * grad_a
+    b -= lr * grad_b
+</code></pre>
+</div>
+
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let data = {{ chart_data|tojson }};
+let a = 1.0, b = 1.0;
+const lr = 0.01;
+let autoTrainInterval = null;
+let scatterChart;
+
+renderTable();
+initCharts();
+drawSurface();
+
+function renderTable() {
+  const sample = {{ table_data|tojson }};
+  const tbody = document.querySelector('#sample-table tbody');
+  sample.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${row.study_time.toFixed(2)}</td><td>${row.score.toFixed(2)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function stepGD() {
+  let errorSumA = 0;
+  let errorSumB = 0;
+  let totalLoss = 0;
+
+  for (let i = 0; i < data.length; i++) {
+    const x = data[i].study_time;
+    const y = data[i].score;
+    const pred = a * x + b;
+    const error = pred - y;
+    errorSumA += error * x;
+    errorSumB += error;
+    totalLoss += error * error;
+  }
+
+  const gradA = (2 / data.length) * errorSumA;
+  const gradB = (2 / data.length) * errorSumB;
+
+  a -= lr * gradA;
+  b -= lr * gradB;
+
+  const mse = totalLoss / data.length;
+
+  document.getElementById('log').textContent =
+    `전체 데이터 기반 업데이트\n` +
+    `MSE: ${mse.toFixed(4)}\n` +
+    `a: ${a.toFixed(4)}, b: ${b.toFixed(4)}`;
+
+  updateCharts();
+}
+
+function startAutoTrain() {
+  if (!autoTrainInterval) {
+    autoTrainInterval = setInterval(stepGD, 500);
+  }
+}
+
+function stopAutoTrain() {
+  clearInterval(autoTrainInterval);
+  autoTrainInterval = null;
+}
+
+function initCharts() {
+  const ctx = document.getElementById('scatterChart').getContext('2d');
+  scatterChart = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: '샘플 데이터',
+          data: data.map(p => ({ x: p.study_time, y: p.score })),
+          backgroundColor: 'gray'
+        },
+        {
+          label: '예측선',
+          type: 'line',
+          data: [],
+          borderColor: 'blue',
+          borderWidth: 2,
+          fill: false,
+          pointRadius: 0
+        }
+      ]
+    },
+    options: {
+      animation: false,
+      scales: {
+        x: { title: { display: true, text: '공부시간' } },
+        y: { title: { display: true, text: '점수' } }
+      }
+    }
+  });
+
+  updateCharts();
+}
+
+function updateCharts() {
+  scatterChart.data.datasets[1].data = [
+    { x: 0, y: a * 0 + b },
+    { x: 10, y: a * 10 + b }
+  ];
+  scatterChart.update();
+
+  const mse = data.reduce((acc, p) => acc + Math.pow(a * p.study_time + b - p.score, 2), 0) / data.length;
+  Plotly.update('surfacePlot', {
+    x: [[a]],
+    y: [[b]],
+    z: [[mse]]
+  }, {}, [1]);
+}
+
+function drawSurface() {
+  const a_vals = Array.from({ length: 50 }, (_, i) => i * 0.1);
+  const b_vals = Array.from({ length: 50 }, (_, i) => i * 0.2);
+  const z_vals = b_vals.map(bVal =>
+    a_vals.map(aVal =>
+      data.reduce((sum, p) => sum + Math.pow(aVal * p.study_time + bVal - p.score, 2), 0) / data.length
+    )
+  );
+  const mse = data.reduce((acc, p) => acc + Math.pow(a * p.study_time + b - p.score, 2), 0) / data.length;
+
+  Plotly.newPlot('surfacePlot', [
+    {
+      type: 'surface',
+      x: a_vals,
+      y: b_vals,
+      z: z_vals,
+      colorscale: 'Viridis',
+      showscale: true
+    },
+    {
+      type: 'scatter3d',
+      mode: 'markers',
+      x: [a],
+      y: [b],
+      z: [mse],
+      marker: { color: 'red', size: 5 }
+    }
+  ], {
+    title: 'MSE 손실 곡면',
+    scene: {
+      xaxis: { title: 'a' },
+      yaxis: { title: 'b' },
+      zaxis: { title: 'MSE' }
+    }
+  });
+}
+</script>
+{% endblock %}

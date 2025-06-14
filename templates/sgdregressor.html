@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+{% block title %}SGD 회귀 모델 학습{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/sgdregressor.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<h1>SGDRegressor (확률적 경사하강법 회귀)</h1>
+<h2>공부 시간으로 시험 점수 예측하기</h2>
+
+<div class="row-layout">
+  <div class="box narrow">
+    <hr class="section-divider">
+    <h3>데이터 샘플 (10개)</h3>
+    <div class="table-container">
+      <table id="sample-table">
+        <thead><tr><th>공부시간</th><th>점수</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="box wide">
+    <hr class="section-divider">
+    <h3>업데이트 수식 및 파라미터</h3>
+    <div class="formula-box">
+      <p><strong>손실함수 (SE):</strong> &nbsp;
+      \( L = \frac{1}{2}(ax + b - y)^2 \)</p>
+      <p><strong>업데이트 공식:</strong> &nbsp;
+      \( a \leftarrow a - \eta \cdot (ax + b - y) \cdot x \)</p>
+      <p>\( b \leftarrow b - \eta \cdot (ax + b - y) \)</p>
+    </div>
+    <div class="predict-box">
+      <p><strong>loss:</strong> squared_error (SE)</p>
+      <p><strong>penalty:</strong> none</p>
+      <p><strong>learning_rate:</strong> constant</p>
+      <p><strong>eta0:</strong> 0.1</p>
+      <p><strong>max_iter:</strong> 무제한 (수동 업데이트)</p>
+    </div>
+  </div>
+</div>
+
+<div class="row-layout">
+  <div class="box narrow">
+    <hr class="section-divider">
+    <h3>손실 함수 (SE) 시각화</h3>
+    <canvas id="lossChart" width="600" height="300"></canvas>
+  </div>
+  <div class="box wide">
+    <hr class="section-divider">
+    <h3>데이터 분포 및 예측선</h3>
+    <canvas id="scatterChart" height="300"></canvas>
+  </div>
+</div>
+
+<div class="row-layout">
+  <div class="box narrow">
+    <hr class="section-divider">
+    <h3>MSE 포물선 (전체 데이터 기준)</h3>
+    <canvas id="mseChart" height="300"></canvas>
+  </div>
+  <div class="box narrow">
+    <hr class="section-divider">
+    <h3>업데이트 실행</h3>
+    <div class="predict-box">
+      <button onclick="stepSGD()">업데이트 1회</button>
+      <button onclick="startAutoTrain()">자동 학습 시작</button>
+      <button onclick="stopAutoTrain()">정지</button>
+    </div>
+    <pre class="result-box" id="log"></pre>
+  </div>
+</div>
+
+
+<hr class="section-divider">
+<h3>SGDRegressor 학습 예시 코드 (scikit-learn)</h3>
+<div class="code-box">
+<pre><code>from sklearn.linear_model import SGDRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+import numpy as np
+
+# 예제 데이터 (공부시간과 점수)
+X = np.array([[1], [2], [3], [4], [5], [6], [7], [8], [9], [10]])
+y = np.array([15, 25, 31, 42, 49, 60, 65, 78, 85, 95])
+
+# 학습/테스트 데이터 분리
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 모델 정의
+model = SGDRegressor(
+    loss='squared_error',  # MSE
+    penalty=None,          # 정규화 없음
+    learning_rate='constant',
+    eta0=0.01,
+    max_iter=1000,
+    random_state=42
+)
+
+# 모델 학습
+model.fit(X_train, y_train)
+
+# 예측 및 평가
+y_pred = model.predict(X_test)
+mse = mean_squared_error(y_test, y_pred)
+print(f\"테스트 MSE: {mse:.4f}\")</code></pre>
+</div>
+
+
+
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let data = {{ chart_data|tojson }};
+let currentIndex = 0;
+let a = 1.0, b = 1.0;
+const lr = 0.01;
+let autoTrainInterval = null;
+
+let scatterChart, lossChart, mseChart;
+
+renderTable();
+initCharts();
+
+function renderTable() {
+  const sample = {{ table_data|tojson }};
+  const tbody = document.querySelector('#sample-table tbody');
+  sample.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${row.study_time.toFixed(2)}</td><td>${row.score.toFixed(2)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function stepSGD(log = true) {
+  const point = data[currentIndex % data.length];
+  const x = point.study_time;
+  const y = point.score;
+  const pred = a * x + b;
+  const error = pred - y;
+  a = a - lr * error * x;
+  b = b - lr * error;
+  const loss = 0.5 * error * error;
+
+  if (log) {
+    document.getElementById('log').textContent =
+      `# ${currentIndex + 1}번째 데이터로 학습됨\n` +
+      `입력값 x=${x.toFixed(2)}, y=${y.toFixed(2)}\n` +
+      `오차=${error.toFixed(4)}\n` +
+      `손실값(SE)=${loss.toFixed(4)}\n` +
+      `업데이트 후 a=${a.toFixed(4)}, b=${b.toFixed(4)}`;
+  }
+
+  currentIndex++;
+  updateCharts();
+}
+
+function startAutoTrain() {
+  if (!autoTrainInterval) {
+    autoTrainInterval = setInterval(() => stepSGD(true), 500); // 로그 출력 활성화
+  }
+}
+
+function stopAutoTrain() {
+  clearInterval(autoTrainInterval);
+  autoTrainInterval = null;
+}
+
+function createLossData() {
+  const point = data[currentIndex % data.length];
+  const x = point.study_time;
+  const y = point.score;
+  const result = [];
+
+  for (let aVal = 0; aVal <= 15; aVal += 0.1) {
+    let pred = aVal * x + b;
+    let error = pred - y;
+    let se = 0.5 * error * error;
+    result.push({ x: aVal, y: se });
+  }
+
+  return result;
+}
+
+function createMSELossData() {
+  const result = [];
+
+  for (let aVal = 0; aVal <= 15; aVal += 0.1) {
+    let total = data.reduce((acc, p) => {
+      let pred = aVal * p.study_time + b;
+      let error = pred - p.score;
+      return acc + error * error;
+    }, 0);
+    result.push({ x: aVal, y: total / data.length });
+  }
+
+  return result;
+}
+
+function initCharts() {
+  const scatterCtx = document.getElementById('scatterChart').getContext('2d');
+  scatterChart = new Chart(scatterCtx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: '샘플 데이터',
+          data: data.map(p => ({ x: p.study_time, y: p.score })),
+          backgroundColor: 'gray',
+        },
+        {
+          label: '예측선',
+          type: 'line',
+          data: [],
+          borderColor: 'blue',
+          borderWidth: 2,
+          fill: false,
+          pointRadius: 0
+        }
+      ]
+    },
+    options: {
+      animation: false,
+      scales: {
+        x: { title: { display: true, text: '공부시간' } },
+        y: { title: { display: true, text: '점수' } }
+      }
+    }
+  });
+
+  const lossCtx = document.getElementById('lossChart').getContext('2d');
+  lossChart = new Chart(lossCtx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: 'SE 손실곡선',
+          data: [],
+          borderColor: 'black',
+          borderWidth: 1,
+          pointRadius: 0,
+          showLine: true
+        },
+        {
+          label: '현재 위치',
+          data: [],
+          backgroundColor: 'red',
+          pointRadius: 4
+        }
+      ]
+    },
+    options: {
+      animation: false,
+      scales: {
+        x: { title: { display: true, text: 'a (기울기)' }, min: 0, max: 15 },
+        y: { title: { display: true, text: '손실값' }, beginAtZero: true }
+      }
+    }
+  });
+
+  const mseCtx = document.getElementById('mseChart').getContext('2d');
+  mseChart = new Chart(mseCtx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: 'MSE 손실곡선',
+          data: [],
+          borderColor: 'green',
+          borderWidth: 1,
+          pointRadius: 0,
+          showLine: true
+        },
+        {
+          label: '현재 위치',
+          data: [],
+          backgroundColor: 'red',
+          pointRadius: 4
+        }
+      ]
+    },
+    options: {
+      animation: false,
+      scales: {
+        x: { title: { display: true, text: 'a (기울기)' }, min: 0, max: 15 },
+        y: { title: { display: true, text: '손실값' }, beginAtZero: true }
+      }
+    }
+  });
+
+  updateCharts();
+  drawSurface();
+}
+
+function updateCharts() {
+  const point = data[currentIndex % data.length];
+  const x = point.study_time;
+  const y = point.score;
+  const pred = a * x + b;
+  const error = pred - y;
+  const se = 0.5 * error * error;
+
+  lossChart.data.datasets[0].data = createLossData();
+  lossChart.data.datasets[1].data = [{ x: a, y: se }];
+  lossChart.update();
+
+  const mse = data.reduce((acc, p) => acc + Math.pow(a * p.study_time + b - p.score, 2), 0) / data.length;
+  mseChart.data.datasets[0].data = createMSELossData();
+  mseChart.data.datasets[1].data = [{ x: a, y: mse }];
+  mseChart.update();
+
+  scatterChart.data.datasets[1].data = [
+    { x: 0, y: a * 0 + b },
+    { x: 10, y: a * 10 + b }
+  ];
+  scatterChart.update();
+
+  Plotly.update('surfacePlot', {
+    x: [[a]],
+    y: [[b]],
+    z: [[mse]]
+  }, {}, [1]);
+}
+
+function drawSurface() {
+  const a_vals = Array.from({ length: 50 }, (_, i) => i * 0.1);
+  const b_vals = Array.from({ length: 50 }, (_, i) => i * 0.2);
+  const z_vals = b_vals.map(bVal =>
+    a_vals.map(aVal =>
+      data.reduce((sum, p) => sum + Math.pow(aVal * p.study_time + bVal - p.score, 2), 0) / data.length
+    )
+  );
+  const mse = data.reduce((acc, p) => acc + Math.pow(a * p.study_time + b - p.score, 2), 0) / data.length;
+
+  Plotly.newPlot('surfacePlot', [
+    {
+      type: 'surface',
+      x: a_vals,
+      y: b_vals,
+      z: z_vals,
+      colorscale: 'Viridis',
+      showscale: true
+    },
+    {
+      type: 'scatter3d',
+      mode: 'markers',
+      x: [a],
+      y: [b],
+      z: [mse],
+      marker: { color: 'red', size: 5 }
+    }
+  ], {
+    title: 'MSE 손실 곡면',
+    scene: {
+      xaxis: { title: 'a' },
+      yaxis: { title: 'b' },
+      zaxis: { title: 'MSE' }
+    }
+  });
+}
+</script>
+
+{% endblock %}

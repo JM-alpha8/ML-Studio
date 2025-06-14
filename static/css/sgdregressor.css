@@ -1,11 +1,10 @@
-/* ✅ 공통 스타일 포함 */
-
+/* sgd.css */
 body {
-  font-family: 'Segoe UI', sans-serif;
-  background-color: #ffffff;
-  margin: 0;
-  padding: 10px;
-  box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #ffffff;
+    margin: 0;
+    padding: 10px;
+    box-sizing: border-box;
 }
 
 h1 {
@@ -21,28 +20,28 @@ h2 {
 }
 
 h3 {
-  margin-top: 30px;
-  font-size: 18px;
-  margin-bottom: 20px;
-  border-left: 6px solid #4CAF50;
-  color: #333;
-  padding-left: 10px;
+    margin-top: 30px;
+    font-size: 18px;
+    margin-bottom: 20px;
+    border-left: 6px solid #4CAF50;
+    color: #333;
+    padding-left: 10px;
 }
 
 .section-divider {
-  width: 200px;
-  border: none;
-  border-top: 2px solid #ccc;
-  margin: 40px 0 10px 0;
+    width: 200px;
+    border: none;
+    border-top: 2px solid #ccc;
+    margin: 40px 0 10px 0;
 }
 
 .row-layout {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  align-items: flex-start;
-  gap: 80px;
-  margin-bottom: 40px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 80px;
+    margin-bottom: 40px;
 }
 
 .row-layout > .narrow {
@@ -50,12 +49,18 @@ h3 {
 }
 
 .row-layout > .wide {
-  flex: 0 1 40%;
+  flex: 0 1 55%;
 }
 
 .box {
-  padding: 0;
-  min-width: 300px;
+    flex: 1 1 40%;
+    max-width: 600px;
+    min-width: 300px;
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    box-sizing: border-box;
 }
 
 .table-container {
@@ -63,7 +68,7 @@ h3 {
 }
 
 table {
-  width: 70%;
+  width: 100%;
   border-collapse: collapse;
   font-size: 14px;
   margin-top: 10px;
@@ -92,9 +97,8 @@ th {
   line-height: 2;
 }
 
-.predict-box input,
-.predict-box select {
-  width: auto;
+.predict-box input {
+  width: 80px;
   padding: 5px;
   margin-left: 8px;
   margin-bottom: 10px;
@@ -127,11 +131,13 @@ button:hover {
   line-height: 1.6;
 }
 
-.predict-box label {
-    display: inline-block;
-    font-size: 16px;
-    color: #333;
-    margin-bottom: 4px;
+.comparison-table {
+  font-size: 13px;
+  margin-top: 20px;
+}
+
+.comparison-table th {
+  background-color: #eaeaea;
 }
 
 .code-box {
@@ -143,11 +149,26 @@ button:hover {
     font-size: 14px;
     overflow-x: auto;
     white-space: pre-wrap; /* 줄 넘김 허용 */
-    max-width: 700px;
+    max-width: 800px;
     margin-top: 10px;
     margin-bottom: 30px;
 }
 
-pre.code-box > code {
-  line-height: 1.6;  /* 숫자를 키우면 줄 간격 넓어짐 */
+
+.code-box code {
+  line-height: 1.6;
+}
+
+.predict-box label {
+    display: inline-block;
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+canvas {
+  display: block;
+  max-width: 100%;
+  height: 300px !important;
+  width: 600px !important;  /* 또는 필요시 고정 너비 */
 }
